@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Color Blindness Simulator</title>
+    <style>
+        :root { --primary: #4f46e5; }
+        body { font-family: 'Segoe UI', sans-serif; background: #f3f4f6; display: flex; justify-content: center; padding: 20px; }
+        .card { background: white; padding: 2rem; border-radius: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 100%; max-width: 500px; }
+        select, button { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #ddd; margin-top: 5px; }
+        button { background: var(--primary); color: white; border: none; cursor: pointer; }
+        
+        /* Preview Image */
+        #preview { width: 100%; height: 250px; object-fit: cover; border-radius: 8px; margin-top: 15px; display: none; cursor: zoom-in; }
+        
+        /* Modal Styles */
+        .modal { display: none; position: fixed; z-index: 1000; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); justify-content: center; align-items: center; }
+        .modal img { max-width: 90%; max-height: 90%; border-radius: 8px; }
+        .close { position: absolute; top: 20px; right: 30px; color: white; font-size: 40px; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <h1>Simulator Buta Warna</h1>
+    
+    <select id="mode">
+        <option value="protanopia">Protanopia (Merah)</option>
+        <option value="deuteranopia">Deuteranopia (Hijau)</option>
+        <option value="tritanopia">Tritanopia (Biru)</option>
+    </select>
+
+    <input type="file" id="imageInput" accept="image/*" onchange="previewImage(this)" style="margin-top:15px;"/>
+    <img id="preview" onclick="openModal()" />
+    
+    <button id="processBtn" style="margin-top:15px;" onclick="processImage()">Proses Gambar</button>
+    <button id="downloadBtn" style="display:none; background: #10b981; margin-top: 10px;" onclick="downloadImage()">Download Hasil</button>
+</div>
+
+<div id="imageModal" class="modal" onclick="closeModal()">
+    <span class="close">&times;</span>
+    <img id="modalImg" src="">
+</div>
+
+<script>
+    function previewImage(input) {
+        if (input.files && input.files[0]) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                document.getElementById('preview').src = e.target.result;
+                document.getElementById('preview').style.display = 'block';
+            }
+            reader.readAsDataURL(input.files[0]);
+        }
+    }
+
+    // Fungsi Modal
+    function openModal() {
+        const modal = document.getElementById('imageModal');
+        const modalImg = document.getElementById('modalImg');
+        const preview = document.getElementById('preview');
+        modal.style.display = 'flex';
+        modalImg.src = preview.src;
+    }
+
+    function closeModal() {
+        document.getElementById('imageModal').style.display = 'none';
+    }
+
+    async function processImage() {
+        const fileInput = document.getElementById('imageInput');
+        if (fileInput.files.length === 0) return alert("Pilih gambar dulu!");
+
+        document.getElementById('processBtn').disabled = true;
+        document.getElementById('processBtn').innerText = "Memproses...";
+
+        const formData = new FormData();
+        formData.append('image', fileInput.files[0]);
+
+        try {
+            const mode = document.getElementById('mode').value;
+            const response = await fetch(`/simulate?mode=${mode}`, { method: 'POST', body: formData });
+            
+            const blob = await response.blob();
+            const newUrl = URL.createObjectURL(blob);
+            
+            document.getElementById('preview').src = newUrl;
+        } catch (err) {
+            alert("Gagal memproses gambar");
+        } finally {
+            document.getElementById('processBtn').disabled = false;
+            document.getElementById('processBtn').innerText = "Proses Gambar";
+        }
+    }
+
+    // Simpan URL blob di variabel global agar bisa diakses saat download
+let currentImageUrl = null;
+
+async function processImage() {
+    const fileInput = document.getElementById('imageInput');
+    const downloadBtn = document.getElementById('downloadBtn');
+    
+    if (fileInput.files.length === 0) return alert("Pilih gambar dulu!");
+
+    document.getElementById('processBtn').disabled = true;
+    document.getElementById('processBtn').innerText = "Memproses...";
+    downloadBtn.style.display = "none"; // Sembunyikan saat memproses
+
+    const formData = new FormData();
+    formData.append('image', fileInput.files[0]);
+
+    try {
+        const mode = document.getElementById('mode').value;
+        const response = await fetch(`/simulate?mode=${mode}`, { method: 'POST', body: formData });
+        
+        const blob = await response.blob();
+        currentImageUrl = URL.createObjectURL(blob); // Simpan URL
+        
+        document.getElementById('preview').src = currentImageUrl;
+        document.getElementById('preview').style.display = 'block';
+        
+        // Tampilkan tombol download
+        downloadBtn.style.display = "block";
+    } catch (err) {
+        alert("Gagal memproses gambar");
+    } finally {
+        document.getElementById('processBtn').disabled = false;
+        document.getElementById('processBtn').innerText = "Proses Gambar";
+    }
+}
+
+// Fungsi untuk mendownload
+function downloadImage() {
+    if (!currentImageUrl) return;
+    
+    const link = document.createElement('a');
+    link.href = currentImageUrl;
+    link.download = 'hasil-simulasi-buta-warna.jpg'; // Nama file hasil download
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+</script>
+</body>
+</html>
