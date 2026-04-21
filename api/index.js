@@ -51,4 +51,5 @@ app.post('/simulate', upload.single('image'), async (req, res) => {
         res.status(500).send(error.message); // Mengirim pesan error asli ke browser
     }
 });
-app.listen(port, () => console.log(`Server jalan di http://localhost:${port}`));
+// app.listen(port, () => console.log(`Server jalan di http://localhost:${port}`));
+module.exports = app;
